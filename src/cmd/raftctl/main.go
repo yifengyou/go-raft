@@ -28,11 +28,15 @@ import (
 )
 
 func main() {
+	// 检查是否存在 RAFT_ADDR 环境变量，不存在直接退出
 	addr, ok := os.LookupEnv("RAFT_ADDR")
 	if !ok {
 		errln("RAFT_ADDR environment variable not set")
+		// 直接退出主进程。位于协程也会退出主进程
 		os.Exit(1)
 	}
+	// var Args []string os包内置变量，
+	// 第一个数据一般是执行函数，若要提取所有参数列表，一般是os.Args[1:]
 	exec(raft.NewClient(addr), os.Args[1:])
 }
 
@@ -527,5 +531,10 @@ func transfer(c *raft.Client, args []string) {
 }
 
 func errln(v ...interface{}) {
+	// func Fprintln(w io.Writer, a ...interface{}) (n int, err error)
+	// 返回写入的[]byte数量以及错误，直接忽略错误校验
+	// 写入到os.Stderr，io.Writer是个接口，实现了Write方法就行（鸭子模型）
+	// Write(p []byte) (n int, err error)
+	// Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 	_, _ = fmt.Fprintln(os.Stderr, v...)
 }

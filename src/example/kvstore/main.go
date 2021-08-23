@@ -31,11 +31,11 @@
 // Note: we are using Node.Data to store http-addr, which enables us to enable http redirects.
 //
 // to bootstrap cluster:
-//   $ RAFT_ADDR=localhost:7001 raftctl config apply \
-//        +nid=1,voter=true,addr=localhost:7001,data=localhost:8001 \
-//        +nid=2,voter=true,addr=localhost:7002,data=localhost:8002 \
-//        +nid=3,voter=true,addr=localhost:7003,data=localhost:8003
-//   $ RAFT_ADDR=localhost:7001 raftctl config get
+//  $ RAFT_ADDR=localhost:7001 raftctl config apply \
+//       +nid=1,voter=true,addr=localhost:7001,data=localhost:8001 \
+//       +nid=2,voter=true,addr=localhost:7002,data=localhost:8002 \
+//       +nid=3,voter=true,addr=localhost:7003,data=localhost:8003
+//  $ RAFT_ADDR=localhost:7001 raftctl config get
 //
 // to test kvstore:
 //   $ curl -v -X POST localhost:8001/k1 -d v1
