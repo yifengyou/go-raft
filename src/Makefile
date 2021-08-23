@@ -5,7 +5,5 @@ all:
 	@find ./ -type f -name kvstore |xargs -i ls -alh {}
 
 
-
-
 clean:
 	find ./ -type f -name raftctl |xargs -i rm {}
