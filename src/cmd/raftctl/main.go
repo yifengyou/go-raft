@@ -29,6 +29,13 @@ import (
 
 func main() {
 	// 检查是否存在 RAFT_ADDR 环境变量，不存在直接退出
+	// RAFT_ADDR=localhost:7001 则 addr = "localhost:7001"
+	//
+	// RAFT_ADDR=localhost:7001 raftctl config apply \
+	//       +nid=1,voter=true,addr=localhost:7001,data=localhost:8001 \
+	//       +nid=2,voter=true,addr=localhost:7002,data=localhost:8002 \
+	//       +nid=3,voter=true,addr=localhost:7003,data=localhost:8003
+	//  RAFT_ADDR=localhost:7001 raftctl config get
 	addr, ok := os.LookupEnv("RAFT_ADDR")
 	if !ok {
 		errln("RAFT_ADDR environment variable not set")
@@ -51,10 +58,13 @@ func exec(c *raft.Client, args []string) {
 		errln("  snapshot   take snapshot")
 		errln("  transfer   transfer leadership")
 	}
+	// 若没有参数则打印帮助信息并结束进程
 	if len(args) == 0 {
 		printUsage()
+		// func Exit(code int) -> syscall.Exit(code)
 		os.Exit(1)
 	}
+	// args[0] 是子命令，args[1:] 子命令参数，不是所有命令都需要子命令参数
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "info":
@@ -70,10 +80,82 @@ func exec(c *raft.Client, args []string) {
 	default:
 		errln("unknown command:", cmd)
 		printUsage()
+		// func Exit(code int) -> syscall.Exit(code)
 		os.Exit(1)
 	}
 }
 
+/*
+样例输出：
+
+{
+    "cid": 1234,
+    "nid": 1,
+    "addr": "localhost:7001",
+    "term": 2,
+    "state": "leader",
+    "leader": 1,
+    "snapshotIndex": 0,
+    "firstLogIndex": 1,
+    "lastLogIndex": 2,
+    "lastLogTerm": 2,
+    "committed": 2,
+    "lastApplied": 2,
+    "configs": {
+        "committed": {
+            "nodes": {
+                "1": {
+                    "addr": "localhost:7001",
+                    "voter": true,
+                    "data": "localhost:8001"
+                },
+                "2": {
+                    "addr": "localhost:7002",
+                    "voter": true,
+                    "data": "localhost:8002"
+                },
+                "3": {
+                    "addr": "localhost:7003",
+                    "voter": true,
+                    "data": "localhost:8003"
+                }
+            },
+            "index": 1,
+            "term": 1
+        },
+        "latest": {
+            "nodes": {
+                "1": {
+                    "addr": "localhost:7001",
+                    "voter": true,
+                    "data": "localhost:8001"
+                },
+                "2": {
+                    "addr": "localhost:7002",
+                    "voter": true,
+                    "data": "localhost:8002"
+                },
+                "3": {
+                    "addr": "localhost:7003",
+                    "voter": true,
+                    "data": "localhost:8003"
+                }
+            },
+            "index": 1,
+            "term": 1
+        }
+    },
+    "followers": {
+        "2": {
+            "matchIndex": 2
+        },
+        "3": {
+            "matchIndex": 2
+        }
+    }
+}
+
+ */
 func info(c *raft.Client) {
 	info, err := c.GetInfo()
 	if err != nil {
@@ -82,30 +164,48 @@ func info(c *raft.Client) {
 	}
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
+	// 避免转义>\<\&字符
 	enc.SetEscapeHTML(false) // to avoid html escape as in "read tcp 127.0.0.1:56350-\u003e127.0.0.1:8083: read: connection reset by peer"
 	if err := enc.Encode(info); err != nil {
 		errln(err.Error())
 		os.Exit(1)
 	}
 	var indented bytes.Buffer
+	// func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
+	// 从buf.Bytes()写入到indented
 	if err = json.Indent(&indented, buf.Bytes(), "", "    "); err != nil {
 		errln(err.Error())
 		os.Exit(1)
 	}
+	// func (b *Buffer) Bytes() []byte
 	fmt.Printf("%s\n", indented.Bytes())
 }
 
+/*
+获取leader信息
+
+{
+    "id": 1,
+    "addr": "localhost:7001",
+    "data": "localhost:8001"
+}
+
+
+ */
 func leader(c *raft.Client) {
 	info, err := c.GetInfo()
 	if err != nil {
 		errln(err.Error())
 		os.Exit(1)
 	}
+	// info.Leader > 0 ，节点编号从1开始
 	if info.Leader == 0 {
 		fmt.Println("{}")
 		os.Exit(0)
 	}
 	for _, n := range info.Configs.Latest.Nodes {
+		// 检索info.Leader的ID，提取对应信息，json格式化输出
+		// 因此leader其实是在info命令基础上，摘取leader节点信息而已
 		if n.ID == info.Leader {
 			ldr := struct {
 				ID   uint64 `json:"id"`
@@ -249,8 +349,11 @@ func applyConfig(c *raft.Client, args []string) {
 	config := info.Configs.Latest
 	for _, arg := range args {
 		add := false
+		// func HasPrefix(s, prefix string) bool
 		if strings.HasPrefix(arg, "+") {
 			add = true
+			// func TrimPrefix(s, prefix string) string
+			//
 			arg = strings.TrimPrefix(arg, "+")
 		}
 		// parse fields into map

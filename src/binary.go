@@ -31,10 +31,14 @@ func readUint64(r io.Reader) (uint64, error) {
 }
 
 func readUint32(r io.Reader) (uint32, error) {
+	// 创建4字节容量的byte切片
 	b := make([]byte, 4)
+	// r调用Read()读取4字节放到b中
 	if _, err := io.ReadFull(r, b); err != nil {
 		return 0, err
 	}
+	// 返回小端序，网络默认是大端序列
+	// func (littleEndian) Uint32(b []byte) uint32
 	return byteOrder.Uint32(b), nil
 }
 
@@ -55,18 +59,23 @@ func readBool(r io.Reader) (bool, error) {
 }
 
 func readBytes(r io.Reader) ([]byte, error) {
+	// 获取小端序 uint32，数据封装，开头表示数据大小
 	size, err := readUint32(r)
 	if err != nil {
 		return nil, err
 	}
+	// 创建size大小的byte切片
 	b := make([]byte, size)
+	// 从r中调用Read读取b容量大小的数据
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, err
 	}
+	// 此处读取为何不考虑大小端序列？
 	return b, nil
 }
 
 func readString(r io.Reader) (string, error) {
+	// 从conn中读取数据，函数要考虑黏包问题以及大小端问题
 	b, err := readBytes(r)
 	return string(b), err
 }

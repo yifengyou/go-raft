@@ -27,21 +27,35 @@ import (
 
 // Client is an RPC client used for performing admin tasks,
 // such as membership change, transfer leadership etc.
+// dialFn 是函数类型
+// func(network, address string, timeout time.Duration) (net.Conn, error)
 type Client struct {
 	addr string
 	dial dialFn
 }
 
 // NewClient creates new client for given raft server.
+// 返回一个Client结构，传递addr地址，以及默认dial建立网络连接
 func NewClient(addr string) *Client {
+	// net.DialTimeout() 库函数
+	// func DialTimeout(network, address string, timeout time.Duration) (Conn, error)
 	return &Client{addr, net.DialTimeout}
 }
 
 func (c *Client) getConn() (*conn, error) {
+	// 调用 dialFn类型函数
+	// (network, address string, timeout time.Duration)
+	// network 网络类型 address ip:端口 timeout Duration基数倍数
 	netConn, err := c.dial("tcp", c.addr, 5*time.Second)
 	if err != nil {
 		return nil, err
 	}
+	//type conn struct {
+	//	rwc  net.Conn
+	//	bufr *bufio.Reader
+	//	bufw *bufio.Writer
+	//}
+	//返回conn类型
 	return &conn{
 		rwc:  netConn,
 		bufr: bufio.NewReader(netConn),
@@ -51,18 +65,24 @@ func (c *Client) getConn() (*conn, error) {
 
 // GetInfo return Info containing raft current state.
 func (c *Client) GetInfo() (Info, error) {
+	// 创建网络连接
 	conn, err := c.getConn()
 	if err != nil {
 		return Info{}, err
 	}
 	defer conn.rwc.Close()
 
+	// 写入bufio的写缓存区域
+	// byte(taskInfo) - 127 用于表示获取任务信息
 	if err = conn.bufw.WriteByte(byte(taskInfo)); err != nil {
 		return Info{}, err
 	}
+	// 清空写缓存，调用底层conn的Write方法发送网络数据
 	if err = conn.bufw.Flush(); err != nil {
 		return Info{}, err
 	}
+	// 读网络返回值
+	// func decodeTaskResp(typ taskType, r io.Reader) (interface{}, error)
 	result, err := decodeTaskResp(taskInfo, conn.bufr)
 	if err != nil {
 		return Info{}, err
@@ -191,11 +211,11 @@ func (c *Client) TransferLeadership(target uint64, timeout time.Duration) error 
 type taskType byte
 
 const (
-	taskInfo taskType = math.MaxInt8 - iota
-	taskChangeConfig
-	taskWaitForStableConfig
-	taskTakeSnapshot
-	taskTransferLdr
+	taskInfo taskType = math.MaxInt8 - iota // 127
+	taskChangeConfig // 126
+	taskWaitForStableConfig // 125
+	taskTakeSnapshot // 124
+	taskTransferLdr // 123
 )
 
 func (t taskType) isValid() bool {
@@ -207,6 +227,7 @@ func (t taskType) isValid() bool {
 }
 
 func decodeTaskResp(typ taskType, r io.Reader) (interface{}, error) {
+	// 从网络中读取数据
 	errType, err := readString(r)
 	if err != nil {
 		return nil, err
@@ -240,9 +261,12 @@ func decodeTaskResp(typ taskType, r io.Reader) (interface{}, error) {
 			}
 		}
 	}
+	// 发送什么就接收什么，先处理预期外的错误问题
+	// 若没有错误，就是实际应该返回的内容
 	switch typ {
 	case taskInfo:
 		info := Info{}
+		// 用小端字节序解码
 		err = info.decode(r)
 		return info, err
 	case taskWaitForStableConfig:
