@@ -168,36 +168,57 @@ func (rt randTime) after(min time.Duration) <-chan time.Time {
 // -------------------------------------------------------------------------
 
 func lockDir(dir string) error {
+	// func Abs(path string) (string, error)
+	// 获取绝对路径
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
+	// dir目录下创建临时文件
+	// func TempFile(dir, pattern string) (f *os.File, err error)
 	tempFile, err := ioutil.TempFile(dir, "lock*.tmp")
 	if err != nil {
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
 	defer func() {
+		// 关闭锁文件，并移除
 		_ = tempFile.Close()
+		// func (f *File) Name() string
 		_ = os.Remove(tempFile.Name())
 	}()
+	// func WriteString(w Writer, s string) (n int, err error)
+	// 将进程pid写到锁文件中
 	if _, err := io.WriteString(tempFile, fmt.Sprintf("%d\n", os.Getpid())); err != nil {
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
+	// 真正的锁文件路径
 	lockFile := filepath.Join(dir, "lock")
+	// 将创建的 lock*.tmp 的硬链接，路径即为lockFile
+	// func Link(oldname, newname string) error
 	if err := os.Link(tempFile.Name(), lockFile); err != nil {
+		// 如果锁已经存在，返回锁存在错误
 		if os.IsExist(err) {
+			// type plainError string
+			// ErrLockExists = plainError("raft: lock file exists in storageDir")
 			return ErrLockExists
 		}
+		// 否则，创建error错误返回
+		// func Errorf(format string, a ...interface{}) error
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
+	// func Lstat(name string) (FileInfo, error)
+	// os.lstat() 方法用于类似 stat() 返回文件的信息,但是解析符号链接
 	tempInfo, err := os.Lstat(tempFile.Name())
 	if err != nil {
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
+	// 重新检查一遍锁文件
 	lockInfo, err := os.Lstat(lockFile)
 	if err != nil {
 		return fmt.Errorf("raft.lockDir: %v", err)
 	}
+	// func SameFile(fi1, fi2 FileInfo) bool
+	// 如果两个文件不相同，则锁异常
 	if !os.SameFile(tempInfo, lockInfo) {
 		return ErrLockExists
 	}
@@ -205,6 +226,7 @@ func lockDir(dir string) error {
 }
 
 func unlockDir(dir string) error {
+	// 移除目录中的锁文件即为解锁目录
 	return os.RemoveAll(filepath.Join(dir, "lock"))
 }
 

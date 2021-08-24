@@ -38,19 +38,27 @@ func SetIdentity(storageDir string, cid, nid uint64) (err error) {
 	if nid == 0 {
 		return errors.New("raft: nid is zero")
 	}
+	// func Stat(name string) (FileInfo, error)
+	// 获取文件/目录信息，此时无法判定具体类型
 	d, err := os.Stat(storageDir)
 	if err != nil {
 		return err
 	}
+	// 如果不是目录，报错
 	if !d.IsDir() {
+		// func Errorf(format string, a ...interface{}) error
 		return fmt.Errorf("raft: %q is not a diretory", storageDir)
 	}
+	// 锁住存储目录，创建锁temp文件及lock文件（硬链接）
 	if err := lockDir(storageDir); err != nil {
 		return err
 	}
 	defer func() {
+		// 解锁存储目录
 		err = unlockDir(storageDir)
 	}()
+
+	// 根据存储目录下.id文件名提取信息（cid,nid）
 	val, err := openValue(storageDir, ".id")
 	if err != nil {
 		return err

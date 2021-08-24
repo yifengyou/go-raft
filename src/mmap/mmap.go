@@ -28,6 +28,7 @@ type File struct {
 }
 
 // OpenFile maps given file into memory. The arguments are same as os.OpenFile.
+//func openFile(file *os.File, flag int, size int) (*File, error)
 func OpenFile(name string, flag int, mode os.FileMode) (*File, error) {
 	f, err := os.OpenFile(name, flag, mode)
 	if err != nil {

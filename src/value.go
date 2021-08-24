@@ -22,19 +22,23 @@ import (
 	"strings"
 )
 
+// 用于解析存储目录下的.id结尾的文件信息
 type value struct {
-	dir string
-	ext string
-	v1  uint64
-	v2  uint64
+	dir string // 存储目录
+	ext string // 扩展名
+	v1  uint64 // cid - cluster id
+	v2  uint64 // nid - node id
 }
 
 func openValue(dir, ext string) (*value, error) {
+	// func Glob(pattern string) (matches []string, err error)
+	// 根据通配符匹配获取目录下的文件列表
 	matches, err := filepath.Glob(filepath.Join(dir, "*"+ext))
 	if err != nil {
 		return nil, err
 	}
 	if len(matches) == 0 {
+		// 如果该文件不存在，则创建一个
 		f, err := os.OpenFile(valueFile(dir, ext, 0, 0), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return nil, err
@@ -47,14 +51,22 @@ func openValue(dir, ext string) (*value, error) {
 		}
 		matches = []string{f.Name()}
 	}
+	// ext结尾的文件在存储目录下只能有一个
 	if len(matches) != 1 {
 		return nil, fmt.Errorf("raft: more than one file with ext %s in dir %s", ext, dir)
 	}
+	// 以文件名 1234-3.id为例
+	// 移除.id即为 1234-3
+	// func TrimSuffix(s, suffix string) string
 	s := strings.TrimSuffix(filepath.Base(matches[0]), ext)
+	// 获取 - 字符所在的索引
+	// func IndexByte(s string, c byte) int
 	i := strings.IndexByte(s, '-')
 	if i == -1 {
 		return nil, fmt.Errorf("raft: invalid value file %s", matches[0])
 	}
+	// 索引前的部分为cid，索引后的部分为nid，都需要转换为10进制的int64类型数据
+	// func ParseInt(s string, base int, bitSize int) (i int64, err error)
 	v1, err := strconv.ParseInt(s[:i], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("raft: invalid value file %s", matches[0])

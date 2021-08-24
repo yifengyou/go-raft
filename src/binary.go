@@ -20,6 +20,8 @@ import (
 )
 
 // byteOrder used for encode/decode
+// var LittleEndian littleEndian
+// type littleEndian struct{}
 var byteOrder = binary.LittleEndian
 
 func readUint64(r io.Reader) (uint64, error) {
@@ -124,6 +126,7 @@ func writeString(w io.Writer, s string) error {
 	if err := writeUint32(w, uint32(len(s))); err != nil {
 		return err
 	}
+	// func WriteString(w Writer, s string) (n int, err error)
 	_, err := io.WriteString(w, s)
 	return err
 }
