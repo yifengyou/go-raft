@@ -63,12 +63,18 @@ func SetIdentity(storageDir string, cid, nid uint64) (err error) {
 	if err != nil {
 		return err
 	}
+	// 如果当前cid以及nid一致，则说明非初始化且id都没变化，正常返回
 	if cid == val.v1 && nid == val.v2 {
 		return nil
 	}
+	// 否则cid=0,nid=0为初始化状态，但又非cid、nid，说明乱了，报错退出
+	// 一个存储仓库只属于某个cid、nid，不能复用
 	if val.v1 != 0 && val.v2 != 0 {
 		return ErrIdentityAlreadySet
 	}
+	// 此时判定cid、nid都为0，初始化为有效地cid、nid
+	// 其实就是将原始的0-0.id修改为cid-nid.id
+	// 通过重命名文件来实现
 	return val.set(cid, nid)
 }
 

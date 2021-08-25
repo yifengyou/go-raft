@@ -88,6 +88,8 @@ func (v *value) get() (uint64, uint64) {
 }
 
 func (v *value) set(v1, v2 uint64) error {
+	// v1 - cid - cluster id
+	// v2 - nid - node id
 	if v1 == v.v1 && v2 == v.v2 {
 		return nil
 	}
