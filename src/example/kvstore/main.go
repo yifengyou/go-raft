@@ -114,6 +114,7 @@ func main() {
 	}()
 
 	// 启动raft集群通信监听
+	// raftAddr = "localhost:7001"
 	err = r.ListenAndServe(raftAddr)
 	if err != raft.ErrServerClosed && err != raft.ErrNodeRemoved {
 		panic(err)

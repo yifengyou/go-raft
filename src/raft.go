@@ -162,10 +162,12 @@ func New(opt Options, fsm FSM, storageDir string) (*Raft, error) {
 // is the advertised address, which should be reachable from other
 // nodes in the cluster.
 func (r *Raft) ListenAndServe(addr string) error {
+	// addr = "localhost:7001"
 	lr, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
+	// 关键，传递listener Server运行
 	return r.Serve(lr)
 }
 
@@ -182,19 +184,26 @@ func (r *Raft) ListenAndServe(addr string) error {
 // is the advertised address, which should be reachable from other
 // nodes in the cluster.
 func (r *Raft) Serve(l net.Listener) error {
+	// 安全关闭listenner
 	defer safeClose(r.closed)
+	// check listen未关闭
 	if r.isClosed() {
+		// ErrServerClosed = plainError("raft: server closed")
 		return ErrServerClosed
+		// 直接panic退出
 	}
+	// 检查快照目录
 	storageDir := filepath.Dir(r.snaps.dir)
 	if err := lockDir(storageDir); err != nil {
 		return err
 	}
 	defer unlockDir(storageDir)
-	if trace {
+	//if trace {
+	if true {
 		println(r, "serving at", l.Addr())
 		defer println(r, "<< shutdown()")
 	}
+	// 通过日志，打印节点基本信息
 	r.logger.Info("storage:", filepath.Dir(r.snaps.dir))
 	r.logger.Info("cid:", r.cid, "nid:", r.nid)
 	r.logger.Info(r.configs.Latest)

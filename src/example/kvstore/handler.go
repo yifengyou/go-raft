@@ -52,8 +52,10 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// 提交task执行
 		res, err := h.execute(task)
 		if err != nil {
+			// 可能非leader节点，则重定向到leader节点获取数据
 			h.replyErr(w, r, err)
 		} else {
+			// 执行ok，正常返回
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(res.(string)))
@@ -63,22 +65,29 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// curl -X POST localhost:8001/k1 -d v1
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			// 极少会错误吧
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// 直接提交任务
 		_, err = h.execute(raft.UpdateFSM(encodeCmd(set{key, string(b)})))
 		if err != nil {
+			// 可能非leader节点，则重定向到leader节点获取数据
 			h.replyErr(w, r, err)
 		} else {
+			// 执行成功，只返回状态码 204
 			w.WriteHeader(http.StatusNoContent)
 		}
 	case http.MethodDelete:
 		// 如果是DELETE请求，则删除键值
 		// curl -X DELETE  localhost:8001/k1
+		// raft.UpdateFSM(encodeCmd(del{key}))
 		_, err := h.execute(raft.UpdateFSM(encodeCmd(del{key})))
 		if err != nil {
+			// 可能非leader节点，则重定向到leader节点获取数据
 			h.replyErr(w, r, err)
 		} else {
+			// 执行成功，只返回状态码 204
 			w.WriteHeader(http.StatusNoContent)
 		}
 	default:
@@ -88,13 +97,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) replyErr(w http.ResponseWriter, r *http.Request, err error) {
+	// 若当前raft节点非leader，则重定向到leader
 	if err, ok := err.(raft.NotLeaderError); ok && err.Leader.ID != 0 {
 		url := fmt.Sprintf("http://%s%s", err.Leader.Data, r.URL.Path)
+		// func Redirect(w ResponseWriter, r *Request, url string, code int)
 		http.Redirect(w, r, url, http.StatusPermanentRedirect)
 		return
 	}
+	//否则为内部服务错误
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(http.StatusInternalServerError) // 500
 	w.Write([]byte(err.Error()))
 }
 
@@ -102,6 +114,7 @@ func (h handler) execute(t raft.FSMTask) (interface{}, error) {
 	select {
 	case <-h.r.Closed():
 		return nil, raft.ErrServerClosed
+	// 传递任务t
 	case h.r.FSMTasks() <- t:
 	}
 	<-t.Done()

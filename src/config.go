@@ -95,6 +95,7 @@ type Node struct {
 	// Data can be used by application to associate some information
 	// with node. Data is opaque to raft and is not interpreted.
 	// For example application address
+	// Data为raft节点所在ip值，在哪里赋值？
 	Data string `json:"data,omitempty"`
 
 	// Action tells the action to be taken by leader, when appropriate.

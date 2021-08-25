@@ -20,4 +20,5 @@ const (
 	trace = false
 )
 
+// 内建函数可以重定义，此处将打印重构为空，则不会打印调试信息
 func println(args ...interface{}) {}
