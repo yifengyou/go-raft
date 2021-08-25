@@ -78,6 +78,9 @@ type Raft struct {
 // New is used to construct a new Raft node.
 // If storageDir already contains lock file, it returns ErrLockExists.
 // If identity is not set in storageDir, it returns ErrIdentityNotSet.
+// New 用于构造一个新的 Raft 节点。
+// 如果 storageDir 已经包含锁定文件，则返回 ErrLockExists。
+// 如果未在 storageDir 中设置身份（cid、nid标识文件），则返回 ErrIdentityNotSet。
 func New(opt Options, fsm FSM, storageDir string) (*Raft, error) {
 	// opt 参数合理性校验
 	if err := opt.validate(); err != nil {
@@ -119,7 +122,7 @@ func New(opt Options, fsm FSM, storageDir string) (*Raft, error) {
 		snapInterval:     opt.SnapshotInterval,
 		snapThreshold:    opt.SnapshotThreshold,
 		storage:          store,
-		state:            Follower,
+		state:            Follower, // 默认初始化为follower
 		hbTimeout:        opt.HeartbeatTimeout,
 		promoteThreshold: opt.PromoteThreshold,
 		shutdownOnRemove: opt.ShutdownOnRemove,
@@ -198,8 +201,8 @@ func (r *Raft) Serve(l net.Listener) error {
 		return err
 	}
 	defer unlockDir(storageDir)
-	//if trace {
-	if true {
+	// 是否要追溯日志
+	if trace {
 		println(r, "serving at", l.Addr())
 		defer println(r, "<< shutdown()")
 	}
@@ -212,6 +215,7 @@ func (r *Raft) Serve(l net.Listener) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	// 启动一个协程用于状态机
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -223,6 +227,7 @@ func (r *Raft) Serve(l net.Listener) error {
 	defer close(r.fsm.ch)
 
 	// restore fsm from last snapshot, if present
+	// 是否要回滚快照
 	if r.snaps.index > 0 {
 		r.fsm.ch <- fsmRestoreReq{r.fsmRestoredCh}
 		if err := <-r.fsmRestoredCh; err != nil {
@@ -230,7 +235,7 @@ func (r *Raft) Serve(l net.Listener) error {
 		}
 		r.commitIndex = r.snaps.index
 	}
-
+	// 启动一个通信server用于rpc
 	s := newServer(r, l)
 	wg.Add(1)
 	go func() {
@@ -242,6 +247,7 @@ func (r *Raft) Serve(l net.Listener) error {
 	}()
 	defer s.shutdown()
 
+	// 启动go协程执行状态切换
 	go r.runBatch()
 	r.stateLoop()
 	for ne := range r.newEntryCh {
@@ -250,6 +256,7 @@ func (r *Raft) Serve(l net.Listener) error {
 			ne = ne.next
 		}
 	}
+	// 返回节点关闭原因
 	return r.closeReason
 }
 

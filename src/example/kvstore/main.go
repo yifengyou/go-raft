@@ -87,6 +87,8 @@ func main() {
 	opt := raft.DefaultOptions()
 	// 根据 默认参数 + frontend内存缓存区 + backend存储持久化 创建一个raft节点
 	// 关键句柄r，后续node操作都会用到r数据及其方法
+	// 这里将raft与kvStore以及本地存储仓库关联起来了！！
+	// func New(opt Options, fsm FSM, storageDir string)
 	r, err := raft.New(opt, store, storageDir)
 	if err != nil {
 		panic(err)

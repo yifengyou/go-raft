@@ -43,7 +43,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		// 若为get请求，则获取key值
 		// curl http://localhost:8001/k1
+		// 关键，通过raft读取键值
 		task := raft.ReadFSM(get{key})
+		//dirtyRead should work on non-leader
 		if _, ok := r.URL.Query()["dirty"]; ok {
 			// 如果有dirty参数，那么默认采用脏读方式读取
 			// 此任务可以提交给非选民

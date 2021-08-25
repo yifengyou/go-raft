@@ -153,12 +153,16 @@ func fsmTask(typ entryType, cmd interface{}, data []byte) FSMTask {
 
 // UpdateFSM task is used to modify state in FSM.
 // This eventually calls FSM.Update(data).
+// UpdateFSM 任务用于修改 FSM 中的状态。
+// 最终会调用 FSM.Update(data)
 func UpdateFSM(data []byte) FSMTask {
 	return fsmTask(entryUpdate, nil, data)
 }
 
 // ReadFSM task is used to read state from FSM.
 // This eventually calls FSM.Read(cmd).
+// ReadFSM 任务用于从 FSM 读取状态。
+// 最终会调用 FSM.Read(cmd)
 func ReadFSM(cmd interface{}) FSMTask {
 	return fsmTask(entryRead, cmd, nil)
 }

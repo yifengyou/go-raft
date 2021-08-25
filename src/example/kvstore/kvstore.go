@@ -34,6 +34,9 @@ func newKVStore() *kvStore {
 
 var _ raft.FSM = (*kvStore)(nil)
 
+// type FSM interface
+// 应用程序kvStore实现FSM接口
+// 为何数据读写不加锁？
 func (s *kvStore) Update(b []byte) interface{} {
 	cmd, err := decodeCmd(b)
 	if err != nil {
@@ -41,6 +44,7 @@ func (s *kvStore) Update(b []byte) interface{} {
 	}
 	switch cmd := cmd.(type) {
 	case set:
+		// 需不需要加锁？
 		s.data[cmd.Key] = cmd.Val
 		return nil
 	case del:
@@ -50,6 +54,7 @@ func (s *kvStore) Update(b []byte) interface{} {
 	return fmt.Errorf("unknown cmd: %T", cmd)
 }
 
+// type FSM interface
 func (s *kvStore) Read(cmd interface{}) interface{} {
 	switch cmd := cmd.(type) {
 	case get:
@@ -58,6 +63,7 @@ func (s *kvStore) Read(cmd interface{}) interface{} {
 	return fmt.Errorf("unknown cmd: %T", cmd)
 }
 
+//type FSM interface
 func (s *kvStore) Snapshot() (raft.FSMState, error) {
 	data := make(map[string]string)
 	for k, v := range s.data {
@@ -66,6 +72,7 @@ func (s *kvStore) Snapshot() (raft.FSMState, error) {
 	return &kvState{data}, nil
 }
 
+//type FSM interface
 func (s *kvStore) Restore(r io.Reader) error {
 	var data map[string]string
 	if err := gob.NewDecoder(r).Decode(&data); err != nil {
@@ -96,6 +103,8 @@ type del struct {
 	Key string
 }
 
+// kvStore类型每次调用Update时，需要decodeCmd
+// func (s *kvStore) Update(b []byte) interface{}
 func decodeCmd(b []byte) (interface{}, error) {
 	if len(b) == 0 {
 		return nil, errors.New("no data")
@@ -119,6 +128,8 @@ func decodeCmd(b []byte) (interface{}, error) {
 	}
 }
 
+// raft.UpdateFSM(encodeCmd(set{key, string(b)}))
+// raft.UpdateFSM(encodeCmd(del{key}))
 func encodeCmd(cmd interface{}) []byte {
 	var typ cmdType
 	switch cmd.(type) {
@@ -143,10 +154,15 @@ type kvState struct {
 	data map[string]string
 }
 
+// 这个变量没卵用
 var _ raft.FSMState = (*kvState)(nil)
 
+// type FSMState interface
+// 应用程序kvStore实现FSMState接口
 func (s *kvState) Persist(w io.Writer) error {
 	return gob.NewEncoder(w).Encode(s.data)
 }
 
+// type FSMState interface
+// 应用程序kvStore实现FSMState接口
 func (s *kvState) Release() {}
