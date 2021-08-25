@@ -26,7 +26,6 @@ import (
 )
 
 // todo: add md5 check
-
 type snapshots struct {
 	dir    string
 	retain int
@@ -40,6 +39,7 @@ type snapshots struct {
 }
 
 func openSnapshots(dir string, opt Options) (*snapshots, error) {
+	// 创建snapshot目录，如果已经存在则不会创建
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
@@ -274,6 +274,8 @@ func snapFile(dir string, index uint64) string {
 
 // findSnapshots returns list of snapshots from latest to oldest
 func findSnapshots(dir string) ([]uint64, error) {
+	// func Glob(pattern string) (matches []string, err error)
+	// 模式匹配获取meta文件
 	matches, err := filepath.Glob(filepath.Join(dir, "*.meta"))
 	if err != nil {
 		return nil, err
@@ -288,6 +290,8 @@ func findSnapshots(dir string) ([]uint64, error) {
 		}
 		snaps = append(snaps, i)
 	}
+	// type decrUint64Slice []uint64
+	// 使用快排排序snpas
 	sort.Sort(decrUint64Slice(snaps))
 	return snaps, nil
 }

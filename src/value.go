@@ -93,11 +93,15 @@ func (v *value) set(v1, v2 uint64) error {
 	if v1 == v.v1 && v2 == v.v2 {
 		return nil
 	}
+	// 当前为 0-0.id  (cid-nidext)
 	curPath := valueFile(v.dir, v.ext, v.v1, v.v2)
+	// 需要调整为 cid-nid.id
 	newPath := valueFile(v.dir, v.ext, v1, v2)
+	// func Rename(oldpath, newpath string) error
 	if err := os.Rename(curPath, newPath); err != nil {
 		return err
 	}
+	// 執行sync，缓存落盘
 	if err := syncDir(v.dir); err != nil {
 		return err
 	}
@@ -106,5 +110,7 @@ func (v *value) set(v1, v2 uint64) error {
 }
 
 func valueFile(dir, ext string, v1, v2 uint64) string {
+	// func Join(elem ...string) string
+	// 与python的os.path.join一个效果
 	return filepath.Join(dir, fmt.Sprintf("%d-%d%s", v1, v2, ext))
 }

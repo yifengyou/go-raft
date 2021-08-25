@@ -31,6 +31,9 @@ import (
 //
 // If the storageDir is already in use, returns ErrLockExists.
 // If the stored identity does not match given identity, returns ErrIdentityAlreadySet.
+// 设置仓库标识，通过存储目录下存放一个文件，以该文件名作为标识
+// 初始化标识为 0-0ext
+// 每次启动都要判定一下标示与当前cid、nid是否匹配不匹配报错。匹配则复用存储目录
 func SetIdentity(storageDir string, cid, nid uint64) (err error) {
 	if cid == 0 {
 		return errors.New("raft: cid is zero")
@@ -73,14 +76,15 @@ func SetIdentity(storageDir string, cid, nid uint64) (err error) {
 		return ErrIdentityAlreadySet
 	}
 	// 此时判定cid、nid都为0，初始化为有效地cid、nid
-	// 其实就是将原始的0-0.id修改为cid-nid.id
+	// 其实就是将原始的0-0.id修改为cid-nid.id（cid-nidext）
 	// 通过重命名文件来实现
 	return val.set(cid, nid)
 }
 
+// 本地持久化仓库
 type storage struct {
-	idVal *value
-	cid   uint64
+	idVal *value // 定位仓库标识文件，汇总信息为value结构
+	cid   uint64 // cid、nid通过仓库标识文件名获取
 	nid   uint64
 
 	termVal  *value
@@ -96,9 +100,11 @@ type storage struct {
 }
 
 func openStorage(dir string, opt Options) (*storage, error) {
+	// type error interface
 	s, err := &storage{}, error(nil)
 	defer func() {
 		if err != nil {
+			// 如果有打开的日志需要关闭
 			if s.log != nil {
 				_ = s.log.Close()
 			}
@@ -106,18 +112,25 @@ func openStorage(dir string, opt Options) (*storage, error) {
 	}()
 
 	// open identity value ----------------
+	// 根据标识文件获取cid-nid信息
 	if s.idVal, err = openValue(dir, ".id"); err != nil {
 		return nil, err
 	}
+	// func (v *value) get() (uint64, uint64)
 	s.cid, s.nid = s.idVal.get()
 
 	// open term value ----------------
+	// 1234-3.id  9-1.term
+	// 任期信息跟ciduid一样都是在存储目录放一个文件，信息放在文件名中
 	if s.termVal, err = openValue(dir, ".term"); err != nil {
 		return nil, err
 	}
+	// term-voteFor.term文件名获取信息
 	s.term, s.votedFor = s.termVal.get()
 
 	// open snapshots ----------------
+	// 打开快照存储仓库
+	// 快照用于存放节点运行状态
 	if s.snaps, err = openSnapshots(filepath.Join(dir, "snapshots"), opt); err != nil {
 		return nil, err
 	}

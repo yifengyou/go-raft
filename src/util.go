@@ -55,14 +55,20 @@ func isClosed(ch <-chan struct{}) bool {
 }
 
 func syncDir(dir string) error {
+	// 如果是windows系统，没有sync的要求，直接返回
 	if runtime.GOOS == "windows" {
 		return nil
 	}
+	// 只读方式打开目录
+	// func Open(name string) (*File, error)
 	d, err := os.Open(dir)
 	if err != nil {
 		return err
 	}
+	// func (f *File) Sync() error
+	// 类似于sync命令，缓存落盘
 	err = d.Sync()
+	// func (f *File) Close() error
 	e := d.Close()
 	if err != nil {
 		return err
@@ -233,7 +239,6 @@ func unlockDir(dir string) error {
 // -------------------------------------------------------------------------
 
 type decrUint64Slice []uint64
-
 func (s decrUint64Slice) Len() int           { return len(s) }
 func (s decrUint64Slice) Less(i, j int) bool { return s[i] > s[j] }
 func (s decrUint64Slice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }

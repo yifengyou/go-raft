@@ -79,15 +79,19 @@ type Raft struct {
 // If storageDir already contains lock file, it returns ErrLockExists.
 // If identity is not set in storageDir, it returns ErrIdentityNotSet.
 func New(opt Options, fsm FSM, storageDir string) (*Raft, error) {
+	// opt 参数合理性校验
 	if err := opt.validate(); err != nil {
 		return nil, err
 	}
+	// 创建日志
 	if opt.Logger == nil {
 		opt.Logger = nopLogger{}
 	}
+	// 告警信息处理
 	if opt.Alerts == nil {
 		opt.Alerts = nopAlerts{}
 	}
+	// 打开存储持久化仓库
 	store, err := openStorage(storageDir, opt)
 	if err != nil {
 		return nil, err

@@ -23,6 +23,7 @@ import (
 	"github.com/santhosh-tekuri/raft"
 )
 
+// 定义raft节点处理句柄
 type handler struct {
 	r *raft.Raft
 }

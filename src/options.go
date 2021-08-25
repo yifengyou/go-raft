@@ -27,10 +27,12 @@ import (
 //
 // It is recommended that all servers in cluster use same options.
 type Options struct {
+	// 心跳超时时间
 	HeartbeatTimeout time.Duration
 
 	// PromoteThreshold determines the minimum round duration required
 	// for promoting a nonvoter.
+	// 选举周期
 	PromoteThreshold time.Duration
 
 	// SnapshotInterval determines how often snapshot is taken.
@@ -48,6 +50,7 @@ type Options struct {
 
 	// If ShutdownOnRemove is true, server will shutdown
 	// when it is removed from the cluster.
+	// 从cluster中移除时是否关闭raft节点
 	ShutdownOnRemove bool
 
 	// Bandwidth is the network bandwidth in number of bytes per second.

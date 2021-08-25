@@ -75,30 +75,48 @@ func main() {
 	// shell特点，变量可以放在命令前。则变量作用域仅当前命令。注入到bash子命令
 	// 父进程不会保存这些临时变量，仅子进程中使用
 	cid, nid := lookupEnv("CID"), lookupEnv("NID")
+	// 在存储目录下以特定文件名作为仓库标识，来判断存储目录是否可以复用
 	if err := raft.SetIdentity(storageDir, cid, nid); err != nil {
 		panic(err)
 	}
 
+	// 初始化key value数据
 	store := newKVStore()
+	// 初始化raft默认参数，返回Options参数结构体
+	// TODO : 这里应该支持从配置文件更新配置
 	opt := raft.DefaultOptions()
+	// 根据 默认参数 + frontend内存缓存区 + backend存储持久化 创建一个raft节点
+	// 关键句柄r，后续node操作都会用到r数据及其方法
 	r, err := raft.New(opt, store, storageDir)
 	if err != nil {
 		panic(err)
 	}
+	// 开启http请求监听
+	// func ListenAndServe(addr string, handler Handler) error
+	// httpAddr = "localhost:8001"
 	go http.ListenAndServe(httpAddr, handler{r})
 
 	// always shutdown raft, otherwise lock file remains in storageDir
+	// 结束时务必要执行锁清理，否则仓库无法复用
 	go func() {
 		ch := make(chan os.Signal, 2)
+		// func Notify(c chan<- os.Signal, sig ...os.Signal)
+		//Interrupt Signal = syscall.SIGINT
+		//Kill      Signal = syscall.SIGKILL
+		// os.Interrupt 等价于 syscall.SIGINT
 		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		// 阻塞在通道，知道有信号到达
 		<-ch
+		// 结束阻塞时，Shutdown关闭raft节点
 		_ = r.Shutdown(context.Background())
 	}()
 
+	// 启动raft集群通信监听
 	err = r.ListenAndServe(raftAddr)
 	if err != raft.ErrServerClosed && err != raft.ErrNodeRemoved {
 		panic(err)
 	}
+	fmt.Printf("Normal shutdown raft node %s-%s\n", cid, nid)
 }
 
 func lookupEnv(key string) uint64 {
