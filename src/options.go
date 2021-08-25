@@ -46,6 +46,8 @@ type Options struct {
 	// snapshot, in order to take snapshot.
 	//
 	// This is to avoid taking snapshot, for just few additional entries.
+	// SnapshotThreshold 确定自最近快照以来的最小日志条目数，以便拍摄快照。
+	// 这是为了避免拍摄快照，仅用于一些额外的条目。
 	SnapshotThreshold uint64
 
 	// If ShutdownOnRemove is true, server will shutdown
@@ -66,6 +68,9 @@ type Options struct {
 	// SnapshotsRetain is the number of snapshots to be retained locally.
 	// When new snapshot is taken, older snapshots are removed accordingly.
 	// Value must be >=1.
+	// SnapshotsRetain 是本地保留的快照数量。
+	// 拍摄新快照时，旧快照将相应删除。
+	// 值必须 >=1。
 	SnapshotsRetain int
 
 	// Logger used for logging messages. If nil, nothing is logged.

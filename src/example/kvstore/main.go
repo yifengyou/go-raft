@@ -91,9 +91,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	// 开启http请求监听
 	// func ListenAndServe(addr string, handler Handler) error
 	// httpAddr = "localhost:8001"
+	// handler结构需要实现接口 ServeHTTP(ResponseWriter, *Request)
 	go http.ListenAndServe(httpAddr, handler{r})
 
 	// always shutdown raft, otherwise lock file remains in storageDir

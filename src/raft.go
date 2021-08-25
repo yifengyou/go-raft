@@ -96,15 +96,18 @@ func New(opt Options, fsm FSM, storageDir string) (*Raft, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 若持久化仓库的cid、nid等于0则崩溃退出
 	if store.cid == 0 || store.nid == 0 {
 		return nil, ErrIdentityNotSet
 	}
+	// 初始化状态机
 	sm := &stateMachine{
 		FSM:   fsm,
 		id:    store.nid,
 		ch:    make(chan interface{}, 1024), // todo configurable capacity
 		snaps: store.snaps,
 	}
+	// 初始化raft节点元数据
 	r := &Raft{
 		rtime:            newRandTime(),
 		timer:            newSafeTimer(),

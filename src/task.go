@@ -166,6 +166,7 @@ func ReadFSM(cmd interface{}) FSMTask {
 // DirtyReadFSM task is used to read state from FSM.
 // This eventually calls FSM.Read(cmd). Unlike ReadFSM
 // task, this task can be submitted to non-voter.
+// 此任务可以提交给非选民
 func DirtyReadFSM(cmd interface{}) FSMTask {
 	return fsmTask(entryDirtyRead, cmd, nil)
 }

@@ -145,6 +145,7 @@ func openStorage(dir string, opt Options) (*storage, error) {
 		FileMode:    0600,
 		SegmentSize: opt.LogSegmentSize,
 	}
+	// 根据logOpt、dirMode打开日志文件
 	if s.log, err = log.Open(filepath.Join(dir, "log"), 0700, logOpt); err != nil {
 		return nil, err
 	}

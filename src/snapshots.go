@@ -43,23 +43,29 @@ func openSnapshots(dir string, opt Options) (*snapshots, error) {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
+	// 检索存储目录，子目录snapshot下的.meta文件
 	snaps, err := findSnapshots(dir)
 	if err != nil {
 		return nil, err
 	}
 	s := &snapshots{
 		dir:    dir,
+		// DefaultOptions 中定义 SnapshotsRetain=1
 		retain: opt.SnapshotsRetain,
 		used:   make(map[uint64]int),
 	}
 	if len(snaps) > 0 {
+		// 如果有多个.meta，只取第一个，存放在s.index
 		s.index = snaps[0]
+		// 关键：从.meta中提取快照信息
 		meta, err := s.meta()
 		if err != nil {
 			return nil, err
 		}
+		// 任期调整为快照任期
 		s.term = meta.term
 	}
+	// 若没有状态快照，则重新开始，任期从0开始
 	return s, nil
 }
 
@@ -73,12 +79,15 @@ func (s *snapshots) meta() (snapshotMeta, error) {
 	if s.index == 0 {
 		return snapshotMeta{index: 0, term: 0}, nil
 	}
+	// 打开s.index对应的meta文件
+	// filepath.Join(dir, fmt.Sprintf("%d.meta", index))
 	f, err := os.Open(metaFile(s.dir, s.index))
 	if err != nil {
 		return snapshotMeta{}, err
 	}
 	defer f.Close()
 	meta := snapshotMeta{}
+	// 关键：解析.meta文件内容，写到meta中
 	return meta, meta.decode(f)
 }
 
@@ -242,12 +251,15 @@ func (m *snapshotMeta) encode(w io.Writer) error {
 }
 
 func (m *snapshotMeta) decode(r io.Reader) (err error) {
+	// 读取64位，小端序，uint64，作为index
 	if m.index, err = readUint64(r); err != nil {
 		return err
 	}
+	// 读取64位，小端序，uint64，作为term
 	if m.term, err = readUint64(r); err != nil {
 		return err
 	}
+	// 创建条目，读取，decode
 	e := &entry{}
 	if err = e.decode(r); err != nil {
 		return err
@@ -266,6 +278,7 @@ func (m *snapshotMeta) decode(r io.Reader) (err error) {
 // helpers ----------------------------------------------------
 
 func metaFile(dir string, index uint64) string {
+	// 根据所给index定位到.meta所在路径
 	return filepath.Join(dir, fmt.Sprintf("%d.meta", index))
 }
 func snapFile(dir string, index uint64) string {
@@ -291,7 +304,11 @@ func findSnapshots(dir string) ([]uint64, error) {
 		snaps = append(snaps, i)
 	}
 	// type decrUint64Slice []uint64
-	// 使用快排排序snpas
+	// 使用快排排序snpas，从大到小
+	// 此处sort包的排序，data必须实现Interface接口的方法
+	// decrUint64Slice 就是对Interface接口的实现
+	// 原地调整，没有返回值
+	// func Sort(data Interface)
 	sort.Sort(decrUint64Slice(snaps))
 	return snaps, nil
 }

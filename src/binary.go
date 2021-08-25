@@ -25,10 +25,13 @@ import (
 var byteOrder = binary.LittleEndian
 
 func readUint64(r io.Reader) (uint64, error) {
+	// 创建8字节容量的byte切片
 	b := make([]byte, 8)
+	// r调用Read()读取8字节放到b中
 	if _, err := io.ReadFull(r, b); err != nil {
 		return 0, err
 	}
+	// 返回小端序uint64类型数据
 	return byteOrder.Uint64(b), nil
 }
 

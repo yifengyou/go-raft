@@ -29,18 +29,27 @@ type handler struct {
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// 将请求路径据'/'分割为字符串切片
+	// func Split(s, sep string) []string
 	parts := strings.Split(r.URL.Path, "/")
+	// curl -v localhost:8001/k1  则r.URL.Path="/k1"
 	if len(parts) != 2 || parts[1] == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	// r.URL.Path="/k1" 则k1表示key。key在rest请求不可缺少
 	key := parts[1]
 	switch r.Method {
 	case http.MethodGet:
+		// 若为get请求，则获取key值
+		// curl http://localhost:8001/k1
 		task := raft.ReadFSM(get{key})
 		if _, ok := r.URL.Query()["dirty"]; ok {
+			// 如果有dirty参数，那么默认采用脏读方式读取
+			// 此任务可以提交给非选民
 			task = raft.DirtyReadFSM(get{key})
 		}
+		// 提交task执行
 		res, err := h.execute(task)
 		if err != nil {
 			h.replyErr(w, r, err)
@@ -50,6 +59,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(res.(string)))
 		}
 	case http.MethodPost:
+		// 若为post请求，其中数据为value，key=value。相当于赋值操作
+		// curl -X POST localhost:8001/k1 -d v1
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -62,6 +73,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}
 	case http.MethodDelete:
+		// 如果是DELETE请求，则删除键值
+		// curl -X DELETE  localhost:8001/k1
 		_, err := h.execute(raft.UpdateFSM(encodeCmd(del{key})))
 		if err != nil {
 			h.replyErr(w, r, err)
@@ -69,6 +82,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		}
 	default:
+		//其他rest类型请求直接报错返回 405
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
