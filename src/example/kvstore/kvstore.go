@@ -24,6 +24,8 @@ import (
 	"github.com/santhosh-tekuri/raft"
 )
 
+// TODO: sync.RWMutex
+// 简单的缓存服务器，用一个map来保存数据，提供get、set、del操作
 type kvStore struct {
 	data map[string]string
 }

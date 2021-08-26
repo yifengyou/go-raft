@@ -33,7 +33,7 @@ type Raft struct {
 	rpcCh        chan *rpc
 	disconnected chan uint64 // nid
 
-	fsm           *stateMachine
+	fsm           *stateMachine // finite state machine，有限状态机
 	fsmRestoredCh chan error // fsm reports any errors during restore on this channel
 	snapTimer     *safeTimer
 	snapInterval  time.Duration
@@ -53,7 +53,7 @@ type Raft struct {
 	quorumWait       time.Duration
 	promoteThreshold time.Duration
 	shutdownOnRemove bool
-	logger           Logger
+	logger           Logger // 用来存储raft的日志
 	alerts           Alerts
 	bandwidth        int64
 
