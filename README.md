@@ -1,10 +1,13 @@
 # go-raft
 
-本仓库代码来源于：<https://github.com/santhosh-tekuri/raft>
+本仓库代码来源于：
+
+* santhosh-tekuri : <https://github.com/santhosh-tekuri/raft>
+* hashicorp : <https://github.com/hashicorp/raft>
 
 ## 相关链接
 
-* <https://github.com/vision9527/raft-demo>
+* <https://github.com/vision9527/raft-demo> ： 配套B站视频:<https://www.bilibili.com/video/av414583865/>
 * 中英文论文地址：<https://github.com/maemual/raft-zh_cn>
 * Raft系统运行可视化1 <http://thesecretlivesofdata.com/raft>
 * Raft系统运行可视化2 <https://raft.github.io/#implementations>
