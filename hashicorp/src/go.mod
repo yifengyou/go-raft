@@ -7,4 +7,5 @@ require (
 	github.com/hashicorp/go-hclog v0.9.1
 	github.com/hashicorp/go-msgpack v0.5.5
 	github.com/stretchr/testify v1.3.0
+	github.com/hashicorp/raft-boltdb v0.0.0-20171010151810-6e5ba93211ea
 )
