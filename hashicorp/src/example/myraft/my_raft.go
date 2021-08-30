@@ -14,7 +14,9 @@ import (
 )
 
 func NewMyRaft(raftAddr, raftId, raftDir string) (*raft.Raft, *fsm.Fsm, error) {
+	// 加载默认配置
 	config := raft.DefaultConfig()
+	// 初始化ServerID，全局唯一
 	config.LocalID = raft.ServerID(raftId)
 	// config.HeartbeatTimeout = 1000 * time.Millisecond
 	// config.ElectionTimeout = 1000 * time.Millisecond
@@ -43,6 +45,17 @@ func NewMyRaft(raftAddr, raftId, raftDir string) (*raft.Raft, *fsm.Fsm, error) {
 	fm := new(fsm.Fsm)
 	fm.Data = make(map[string]string)
 
+	// func NewRaft(conf *Config, \
+	//      fsm FSM, logs LogStore, \
+	//      stable StableStore, \
+	//      snaps SnapshotStore, \
+	//      trans Transport) (*Raft, error)
+	//Config： 节点配置
+	//FSM： finite state machine，有限状态机
+	//LogStore： 用来存储raft的日志
+	//StableStore： 稳定存储，用来存储raft集群的节点信息等
+	//SnapshotStore: 快照存储，用来存储节点的快照信息
+	//Transport： raft节点内部的通信通道
 	rf, err := raft.NewRaft(config, fm, logStore, stableStore, snapshots, transport)
 	if err != nil {
 		return nil, nil, err

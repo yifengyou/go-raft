@@ -262,7 +262,7 @@ func (rc *ReloadableConfig) fromConfig(from Config) {
 	rc.SnapshotThreshold = from.SnapshotThreshold
 }
 
-// DefaultConfig returns a Config with usable defaults.
+// DefaultConfig returns a Config with usable defaults. 默认配置
 func DefaultConfig() *Config {
 	return &Config{
 		ProtocolVersion:    ProtocolVersionMax,

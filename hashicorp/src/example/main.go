@@ -99,6 +99,7 @@ func (h HttpServer) Set(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "not leader")
 		return
 	}
+	// 解析URL获取参数
 	vars := r.URL.Query()
 	key := vars.Get("key")
 	value := vars.Get("value")
