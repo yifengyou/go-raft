@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	fsm "github.com/hashicorp/raft/example/fsm"
+	"github.com/hashicorp/raft/example/fsm"
 
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
@@ -26,6 +26,7 @@ func NewMyRaft(raftAddr, raftId, raftDir string) (*raft.Raft, *fsm.Fsm, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	// Transport是raft集群内部节点之间的通信渠道，节点之间需要通过这个通道来进行日志同步、leader选举等
 	transport, err := raft.NewTCPTransport(raftAddr, addr, 2, 5*time.Second, os.Stderr)
 	if err != nil {
 		return nil, nil, err

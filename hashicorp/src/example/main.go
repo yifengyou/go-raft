@@ -71,8 +71,8 @@ func main() {
 
 	// 启动http server
 	httpServer := HttpServer{
-		ctx: myRaft,
-		fsm: fm,
+		ctx: myRaft, // raft实例
+		fsm: fm, // 状态机
 	}
 
 	http.HandleFunc("/set", httpServer.Set)
@@ -108,7 +108,9 @@ func (h HttpServer) Set(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 待更新数据
 	data := "set" + "," + key + "," + value
+	// 更新数据，未提交。5秒超时
 	future := h.ctx.Apply([]byte(data), 5*time.Second)
 	if err := future.Error(); err != nil {
 		fmt.Fprintf(w, "error:"+err.Error())

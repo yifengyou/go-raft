@@ -729,7 +729,19 @@ func (r *Raft) Leader() ServerAddress {
 // for the command to be started. This must be run on the leader or it
 // will fail.
 func (r *Raft) Apply(cmd []byte, timeout time.Duration) ApplyFuture {
-	return r.ApplyLog(Log{Data: cmd}, timeout)
+	//type Log struct {
+	//	Index uint64
+	//	Term uint64
+	//	Type LogType
+	//	Data []byte
+	//	Extensions []byte
+	//	AppendedAt time.Time
+	//}
+
+	return r.ApplyLog(
+		Log{Data: cmd},
+		timeout)
+
 }
 
 // ApplyLog performs Apply but takes in a Log directly. The only values
@@ -743,6 +755,7 @@ func (r *Raft) ApplyLog(log Log, timeout time.Duration) ApplyFuture {
 	}
 
 	// Create a log future, no index or term yet
+	// 创建新日志，待更新，提交
 	logFuture := &logFuture{
 		log: Log{
 			Type:       LogCommand,
